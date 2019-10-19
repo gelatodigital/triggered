@@ -306,20 +306,19 @@ contract GelatoCore is GelatoUserProxies,
     event LogNewExecutionClaimMinted(address indexed selectedExecutor,
                                      uint256 indexed executionClaimId,
                                      address indexed userProxy,
-                                     uint256 actionGasStipend,
+                                     uint256 executeGas,
                                      uint256 executionClaimExpiryDate,
                                      uint256 executorFee,
-                                     address trigger,
                                      bytes triggerPayload,
-                                     address action,
+                                     address trigger,
                                      bytes executePayload
     );
 
     function mintExecutionClaim(address _trigger,
-                                bytes calldata _specificTriggerParams,
                                 address _action,
-                                bytes calldata _specificActionParams,
-                                address payable _selectedExecutor
+                                address payable _selectedExecutor,
+                                bytes calldata _specificTriggerParams,
+                                bytes calldata _specificActionParams
     )
         external
         payable
@@ -364,7 +363,7 @@ contract GelatoCore is GelatoUserProxies,
             bytes4 actionSelector = IGelatoAction(_action).getActionSelector();
             bytes memory actionPayload = abi.encodeWithSelector(// Standard Action Params
                                                                 actionSelector,
-                                                                executionClaimId,
+                                                                userProxy,
                                                                 // Specific Action Params
                                                                _specificActionParams
             );
@@ -383,29 +382,27 @@ contract GelatoCore is GelatoUserProxies,
             bytes32 executionClaimHash
                 = keccak256(abi.encodePacked(_trigger,
                                              triggerPayload,
-                                             _action,
-                                            executePayload,
-                                            executionClaimId,
-                                            userProxy,
-                                            _selectedExecutor,
-                                            actionGasStipend,
-                                            executionClaimExpiryDate,
-                                            msg.value
+                                             userProxy,
+                                             executePayload,
+                                             executionClaimId,
+                                             _selectedExecutor,
+                                             constExecuteGas.add(actionGasStipend),
+                                             executionClaimExpiryDate,
+                                             msg.value
             ));
             hashedExecutionClaims[executionClaimId] = executionClaimHash;
         }
         // =============
-        /*emit LogNewExecutionClaimMinted(_selectedExecutor,
+        emit LogNewExecutionClaimMinted(_selectedExecutor,
                                         executionClaimId,
                                         userProxy,
-                                        actionGasStipend,
+                                        constExecuteGas.add(actionGasStipend),
                                         executionClaimExpiryDate,
                                         msg.value,
-                                        //_trigger,
                                         triggerPayload,
-                                        _action,
+                                        _trigger,
                                         executePayload
-        );*/
+        );
     }
     // $$$$$$$$$$$$$$$ mintExecutionClaim() API END
 
@@ -424,10 +421,9 @@ contract GelatoCore is GelatoUserProxies,
 
     function _canExecute(address _trigger,
                          bytes memory _triggerPayload,
-                         address _action,
-                         bytes memory _executePayload,
-                         uint256 _actionGasStipend,
                          address _userProxy,
+                         bytes memory _executePayload,
+                         uint256 _executeGas,
                          uint256 _executionClaimId,
                          uint256 _executionClaimExpiryDate,
                          uint256 _executorFee
@@ -439,14 +435,13 @@ contract GelatoCore is GelatoUserProxies,
         // _____________ Static CHECKS __________________________________________
         // Compute executionClaimHash from calldata
         bytes32 computedExecutionClaimHash
-            = keccak256(abi.encodePacked(_executionClaimId,
-                                         _userProxy,
-                                         msg.sender,  // selected? executor
-                                         _trigger,
+            = keccak256(abi.encodePacked(_trigger,
                                          _triggerPayload,
-                                         _action,
+                                         _userProxy,
                                          _executePayload,
-                                         _actionGasStipend,
+                                         _executionClaimId,
+                                         msg.sender,  // selected? executor
+                                         _executeGas,
                                          _executionClaimExpiryDate,
                                          _executorFee
         ));
@@ -488,10 +483,9 @@ contract GelatoCore is GelatoUserProxies,
     // canExecute interface for executors
     function canExecute(address _trigger,
                         bytes calldata _triggerPayload,
-                        address _action,
-                        bytes calldata _executePayload,
-                        uint256 _actionGasStipend,
                         address _userProxy,
+                        bytes calldata _executePayload,
+                        uint256 _executeGas,
                         uint256 _executionClaimId,
                         uint256 _executionClaimExpiryDate,
                         uint256 _executorFee
@@ -502,10 +496,9 @@ contract GelatoCore is GelatoUserProxies,
     {
         return _canExecute(_trigger,
                            _triggerPayload,
-                           _action,
-                           _executePayload,
-                           _actionGasStipend,
                            _userProxy,
+                           _executePayload,
+                           _executeGas,
                            _executionClaimId,
                            _executionClaimExpiryDate,
                            _executorFee
@@ -538,10 +531,9 @@ contract GelatoCore is GelatoUserProxies,
 
     function execute(address _trigger,
                      bytes calldata _triggerPayload,
-                     address _action,
-                     bytes calldata _executePayload,
-                     uint256 _actionGasStipend,
                      address _userProxy,
+                     bytes calldata _executePayload,
+                     uint256 _executeGas,
                      uint256 _executionClaimId,
                      uint256 _executionClaimExpiryDate,
                      uint256 _executorFee
@@ -553,17 +545,16 @@ contract GelatoCore is GelatoUserProxies,
     {
         // Ensure that executor sends enough gas for the execution
         uint256 startGas = gasleft();
-        require(startGas >= _getMinExecutionGasRequirement(_actionGasStipend),
+        require(startGas >= _getMinExecutionGasRequirement(_executeGas),
             "GelatoCore.execute: Insufficient gas sent"
         );
         // _______ canExecute() check ______________________________________________
         {
             uint8 canExecuteResult = _canExecute(_trigger,
                                                  _triggerPayload,
-                                                 _action,
-                                                 _executePayload,
-                                                 _actionGasStipend,
                                                  _userProxy,
+                                                 _executePayload,
+                                                 _executeGas,
                                                  _executionClaimId,
                                                  _executionClaimExpiryDate,
                                                  _executorFee
@@ -588,7 +579,7 @@ contract GelatoCore is GelatoUserProxies,
         // _________  _action.call() _______________________________________________
         {
             (bool success,) = (_userProxy.call
-                                         .gas(_actionGasStipend.add(constExecuteGas))
+                                         .gas(_executeGas)
                                          (_executePayload)
             );
             emit LogExecutionResult(_executionClaimId,
@@ -637,14 +628,13 @@ contract GelatoCore is GelatoUserProxies,
                                      address indexed userProxy,
                                      address indexed cancelor
     );
-    function cancelExecutionClaim(uint256 _executionClaimId,
-                                  address payable _userProxy,
-                                  address payable _selectedExecutor,
-                                  address _trigger,
+    function cancelExecutionClaim(address _trigger,
                                   bytes calldata _triggerPayload,
-                                  address _action,
+                                  address payable _userProxy,
                                   bytes calldata _executePayload,
-                                  uint256 _actionGasStipend,
+                                  uint256 _executionClaimId,
+                                  address payable _selectedExecutor,
+                                  uint256 _executeGas,
                                   uint256 _executionClaimExpiryDate,
                                   uint256 _executorFee
     )
@@ -661,16 +651,15 @@ contract GelatoCore is GelatoUserProxies,
         }
         {
             bytes32 computedExecutionClaimHash
-                = keccak256(abi.encodePacked(_executionClaimId,
-                                            _userProxy,
-                                            _selectedExecutor,
-                                            _trigger,
-                                            _triggerPayload,
-                                            _action,
-                                            _executePayload,
-                                            _actionGasStipend,
-                                            _executionClaimExpiryDate,
-                                            _executorFee
+                = keccak256(abi.encodePacked(_trigger,
+                                             _triggerPayload,
+                                             _userProxy,
+                                             _executePayload,
+                                             _executionClaimId,
+                                             _selectedExecutor,  // selected? executor
+                                             _executeGas,
+                                             _executionClaimExpiryDate,
+                                             _executorFee
             ));
             require(computedExecutionClaimHash == hashedExecutionClaims[_executionClaimId],
                 "GelatoCore.cancelExecutionClaim: hash compare failed"
