@@ -5,6 +5,7 @@ import './DappSys/DSProxy.sol';
 import './ProxyRegistry.sol';
 import './DappSys/DSGuard.sol';
 import './Interfaces/IGelatoAction.sol';
+import './Interfaces/IGelatoTrigger.sol';
 import '@openzeppelin/contracts/drafts/Counters.sol';
 import '@openzeppelin/contracts/ownership/Ownable.sol';
 import '@openzeppelin/contracts/utils/ReentrancyGuard.sol';
@@ -23,13 +24,6 @@ contract GelatoUserProxies is GelatoConstants
     modifier userHasNoProxy {
         require(proxyRegistry.proxies(msg.sender) == DSProxy(0),
             "GelatoUserProxies: user already has a proxy"
-        );
-        _;
-    }
-
-    modifier userHasProxy {
-        require(proxyRegistry.proxies(msg.sender) != DSProxy(0),
-            "GelatoUserProxies: user has no proxy"
         );
         _;
     }
@@ -78,6 +72,8 @@ contract GelatoUserProxies is GelatoConstants
     // ================
 }
 
+
+
 /**
  * @title GelatoCoreAccounting
  */
@@ -88,11 +84,9 @@ contract GelatoCoreAccounting is GelatoConstants,
     using SafeMath for uint256;
 
     //_____________ Gelato ExecutionClaim Economics _______________________
-    // userProxy => Deposited ETH for mintings
     mapping(address => uint256) internal userProxyDeposit;
-    // executor => executor's price factor
     mapping(address => uint256) internal executorPrice;
-    // executor => executor's ETH balance for executed claims
+    mapping(address => uint256) internal executorClaimLifespan;
     mapping(address => uint256) internal executorBalance;
     //_____________ Constant gas values _____________
     uint256 internal gasOutsideGasleftChecks;
@@ -241,6 +235,8 @@ contract GelatoCoreAccounting is GelatoConstants,
     // =========
 }
 
+
+
 /**
  * @title GelatoCore
  */
@@ -297,16 +293,16 @@ contract GelatoCore is GelatoUserProxies,
     }
 
     // $$$$$$$$$$$ mintExecutionClaim() API  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-    event LogSetNewExecutionClaimMinted(uint256 indexed executionClaimId,
-                                        address indexed userProxyByExecutionClaimId,
-                                        address indexed selectedExecutor,
-                                        address trigger,
-                                        bytes triggerPayload,
-                                        address action,
-                                        bytes actionPayload,
-                                        uint256 actionGasStipend,
-                                        uint256 executionClaimExpiryDate,
-                                        uint256 mintingDeposit
+    event LogNewExecutionClaimMinted(uint256 indexed executionClaimId,
+                                     address indexed userProxy,
+                                     address indexed selectedExecutor,
+                                     address trigger,
+                                     bytes triggerPayload,
+                                     address action,
+                                     bytes actionPayload,
+                                     uint256 actionGasStipend,
+                                     uint256 executionClaimExpiryDate,
+                                     uint256 mintingDeposit
     );
 
     function mintExecutionClaim(address _selectedExecutor,
@@ -320,7 +316,10 @@ contract GelatoCore is GelatoUserProxies,
         onlyRegisteredExecutors(_selectedExecutor)
         nonReentrant
     {
-
+        address userProxy = address(proxyRegistry.proxies(msg.sender));
+        require(userProxy != DSProxy(0),
+            "GelatoCore: user has no proxy"
+        );
         // ______ Charge Minting Deposit _______________________________________
         uint256 actionGasStipend = IGelatoAction(_action).getActionGasStipend();
         uint256 executionMinGas = _getMinExecutionGasRequirement(actionGasStipend);
@@ -329,13 +328,13 @@ contract GelatoCore is GelatoUserProxies,
         require(msg.value == mintingDepositPayable,
             "GelatoCore.mintExecutionClaim: mintingDepositPayable failed"
         );
-        userProxyDeposit[msg.sender] = userProxyDeposit[msg.sender].add(mintingDepositPayable);
+        userProxyDeposit[userProxy] = userProxyDeposit[userProxy].add(msg.value);
         // =============
 
         // ______ Mint new executionClaim ______________________________________
         Counters.increment(executionClaimIds);
         uint256 executionClaimId = executionClaimIds.current();
-        userProxyByExecutionClaimId[executionClaimId] = msg.sender;
+        userProxyByExecutionClaimId[executionClaimId] = userProxy;
         // =============
 
         // ______ Trigger-Action Payload encoding ______________________________
@@ -361,11 +360,12 @@ contract GelatoCore is GelatoUserProxies,
         // =============
 
         // ______ ExecutionClaim Hashing ______________________________________
-        uint256 executionClaimExpiryDate = now.add(executorClaimLifespan);
+        uint256 executionClaimExpiryDate
+            = now.add(executorClaimLifespan[_selectedExecutor]);
         // Include executionClaimId: avoid hash collisions
         bytes32 executionClaimHash
             = keccak256(abi.encodePacked(executionClaimId,
-                                         msg.sender, // User
+                                         userProxy,
                                          _selectedExecutor,
                                          _trigger,
                                          triggerPayload,
@@ -377,8 +377,8 @@ contract GelatoCore is GelatoUserProxies,
         ));
         hashedExecutionClaims[executionClaimId] = executionClaimHash;
         // =============
-        emit LogSetNewExecutionClaimMinted(msg.sender,  // User
-                                        executionClaimId,
+        emit LogNewExecutionClaimMinted(executionClaimId,
+                                        userProxy,
                                         _selectedExecutor,
                                         _trigger,
                                         triggerPayload,
@@ -389,7 +389,7 @@ contract GelatoCore is GelatoUserProxies,
                                         mintingDepositPayable
         );
     }
-    // $$$$$$$$$$$$$$$ mintExecutionClaim() END
+    // $$$$$$$$$$$$$$$ mintExecutionClaim() API END
 
 
     // ********************* EXECUTE FUNCTION SUITE *********************
