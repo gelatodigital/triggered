@@ -48,14 +48,16 @@ contract GelatoUserProxies {
         // User cannot have a guard already, if he didnt have a proxy before
         DSGuard userProxyGuard = guardFactory.newGuard();
         // Allow gelatoCore to call any action via the user's proxy
-        userProxyGuard.permit(address(this), address(userProxy), userProxyGuard.ANY());
+        userProxyGuard.permit(address(this), userProxyGuard.ANY(), userProxyGuard.ANY());
         // Change owner from gelatoCore to userProxy
         userProxyGuard.setOwner(address(userProxy));
         // Register the userProxy guard
+        // @DEV user could change authority without this state variable changing, hence this might be a bit risky. We should rather have a helper getter than returns the authority value of a users proxy address.
         userProxyGuards[userProxy] = address(userProxyGuard);
     }
 
     /// @dev required userProxy to have no guard
+    // @DEV doesnt that only check if the user has no guard deployed through us? I think we must rather check if dsproxy.authority == address(0)
     modifier unguardedUserProxy {
         require(userProxyGuards[msg.sender] == address(0),
             "GelatoUserProxies.noUserProxyGuard"
@@ -77,10 +79,11 @@ contract GelatoUserProxies {
         );
         DSGuard userProxyGuard = guardFactory.newGuard();
         // Allow gelatoCore to call any action via the user's proxy
-        userProxyGuard.permit(address(this), address(userProxy), userProxyGuard.ANY());
+        userProxyGuard.permit(address(this), userProxyGuard.ANY(), userProxyGuard.ANY());
         // Change owner from gelatoCore to userProxy
         userProxyGuard.setOwner(address(userProxy));
         // Register the userProxy guard
+        // @DEV user could change authority without this state variable changing, hence this might be a bit risky. We should rather have a helper getter than returns the authority value of a users proxy address.
         userProxyGuards[userProxy] = address(userProxyGuard);
     }
 
