@@ -31,6 +31,7 @@ contract GelatoUserProxies is GelatoConstants
         _;
     }
 
+    event LogDevirginize(address userProxy, address userProxyGuard);
     /**
      * @dev this function should be called for users that have nothing deployed yet
      * @return the address of the deployed DSProxy aka userAccount
@@ -43,11 +44,13 @@ contract GelatoUserProxies is GelatoConstants
     {
         userProxy = proxyRegistry.build(msg.sender);
         DSGuard userProxyGuard = guardFactory.newGuard();
-        userProxyGuard.permit(address(this), userProxy, constExecSelector);
+        userProxyGuard.permit(address(this), userProxy, bytes32(constExecSelector));
         userProxyGuard.setOwner(address(userProxy));
         userProxyGuardAddress = address(userProxyGuard);
+        emit LogDevirginize(userProxy, userProxyGuardAddress);
     }
 
+    event LogGuard(address userProxyGuard);
     /**
      * @dev this function should be called for users that have a proxy but no guard
      * @return the address of the deployed DSProxy aka userAccount
@@ -65,9 +68,10 @@ contract GelatoUserProxies is GelatoConstants
             "GelatoUserProxies.guard: user already has a DSAuthority"
         );
         DSGuard userProxyGuard = guardFactory.newGuard();
-        userProxyGuard.permit(address(this), address(userProxy), constExecSelector);
+        userProxyGuard.permit(address(this), address(userProxy), bytes32(constExecSelector));
         userProxyGuard.setOwner(address(userProxy));
         userProxyGuardAddress = address(userProxyGuard);
+        emit LogGuard(userProxyGuardAddress);
     }
 
     /**
