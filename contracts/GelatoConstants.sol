@@ -4,7 +4,7 @@ import './ProxyRegistry.sol';
 import './DappSys/DSGuard.sol';
 
 contract GelatoConstants {
-    address constant proxyRegistry = 
-    DSGuardFactory public guardFactory;
+    address constant public constProxyRegistry = 
+    address constant public constGuardFactory;
 
 }
