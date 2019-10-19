@@ -1,5 +1,6 @@
 pragma solidity ^0.5.10;
 
+import ''
 import './DappSys/DSProxy.sol';
 import './ProxyRegistry.sol';
 import './DappSys/DSGuard.sol';
@@ -9,12 +10,12 @@ import '@openzeppelin/contracts/ownership/Ownable.sol';
 import '@openzeppelin/contracts/utils/ReentrancyGuard.sol';
 import '@openzeppelin/contracts/math/SafeMath.sol';
 
-contract GelatoUserProxies {
+
+contract GelatoUserProxies is GelatoConstants {
     ProxyRegistry public proxyRegistry;
     DSGuardFactory public guardFactory;
 
-    // userProxy => userProxyGuard
-    mapping(address => address) public userProxyGuards;
+    bytes4 constant public executeSelector= bytes4(keccak256("execute(address,bytes)"));
 
     constructor(address _proxyRegistry,
                 address _guardFactory
@@ -37,60 +38,45 @@ contract GelatoUserProxies {
     /**
      * @dev this function should be called for users that have nothing deployed yet
      * @return the address of the deployed DSProxy aka userAccount
+     * @notice user EOA tx afterwards: userProxy.setAuthority(userProxyGuard)
      */
     function devirginize()
         external
         noUserProxy
-        returns(address userProxy)
+        returns(address userProxy, address userProxyGuard)
     {
-        // Requires that user has no proxy
         DSProxy userProxy = DSProxy(ProxyRegistry.build(msg.sender));
-        // User cannot have a guard already, if he didnt have a proxy before
         DSGuard userProxyGuard = guardFactory.newGuard();
-        // Allow gelatoCore to call any action via the user's proxy
-        userProxyGuard.permit(address(this), address(userProxy), userProxyGuard.ANY());
-        // Change owner from gelatoCore to userProxy
+        userProxyGuard.permit(address(this), address(userProxy), executeSelector);
         userProxyGuard.setOwner(address(userProxy));
-        // Register the userProxy guard
-        userProxyGuards[userProxy] = address(userProxyGuard);
-    }
-
-    /// @dev required userProxy to have no guard
-    modifier unguardedUserProxy {
-        require(userProxyGuards[msg.sender] == address(0),
-            "GelatoUserProxies.noUserProxyGuard"
-        );
-        _;
     }
 
     /**
      * @dev this function should be called for users that have a proxy but no guard
      * @return the address of the deployed DSProxy aka userAccount
+     * @notice user EOA tx afterwards: userProxy.setAuthority(userProxyGuard)
      */
     function guard()
         unguardedUserProxy
         external
+        returns(address userProxyGuard)
     {
         DSProxy userProxy = ProxyRegistry.proxies(msg.sender);
-        require(ProxyRegistry.proxies(msg.sender) != DSProxy(0),
+        require(userProxy != DSProxy(0),
             "GelatoUserProxies.guard: user has no proxy deployed -> devirginize()"
         );
+        require(DSAuthority(userProxy).authority() == DSAuthority(0),
+            "GelatoUserProxies.guard: user already has a DSAuthority"
+        );
         DSGuard userProxyGuard = guardFactory.newGuard();
-        // Allow gelatoCore to call any action via the user's proxy
-        userProxyGuard.permit(address(this), address(userProxy), userProxyGuard.ANY());
-        // Change owner from gelatoCore to userProxy
+        userProxyGuard.permit(address(this), address(userProxy), executeSelector);
         userProxyGuard.setOwner(address(userProxy));
-        // Register the userProxy guard
-        userProxyGuards[userProxy] = address(userProxyGuard);
     }
 
-    /// @dev requires userProxy to have a guard
-    modifier guardedUserProxy {
-        require(userProxyGuards[msg.sender] != address(0),
-            "GelatoUserProxies.guardedUserProxy"
-        );
-        _;
-    }
+    /**
+     * @dev 3rd option: user already has a DSGuard
+     * => permit(gelatoCore, address(userProxy), executeSelector) via frontend
+     */
     // ================
 }
 
