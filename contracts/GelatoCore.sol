@@ -48,7 +48,6 @@ contract GelatoUserProxies is GelatoConstants {
      * @notice user EOA tx afterwards: userProxy.setAuthority(userProxyGuard)
      */
     function guard()
-        unguardedUserProxy
         external
         returns(address userProxyGuard)
     {
