@@ -1,0 +1,20 @@
+{
+  "name": "triggered",
+  "version": "1.0.0",
+  "description": "Smart Contracts for Diffustion 2019 Berlin Hackathon project by gelato legendary members and friends",
+  "main": "networks.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gelatodigital/triggered.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/gelatodigital/triggered/issues"
+  },
+  "homepage": "https://github.com/gelatodigital/triggered#readme"
+}
