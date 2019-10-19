@@ -1,6 +1,6 @@
 pragma solidity ^0.5.10;
 
-import ''
+import './GelatoConstants.sol';
 import './DappSys/DSProxy.sol';
 import './ProxyRegistry.sol';
 import './DappSys/DSGuard.sol';
@@ -12,19 +12,10 @@ import '@openzeppelin/contracts/math/SafeMath.sol';
 
 
 contract GelatoUserProxies is GelatoConstants {
-    ProxyRegistry public proxyRegistry;
-    DSGuardFactory public guardFactory;
+    ProxyRegistry public proxyRegistry = ProxyRegistry(constProxyRegistry);
+    DSGuardFactory public guardFactory = DSGuardFactory(constGuardFactory);
 
     bytes4 constant public executeSelector= bytes4(keccak256("execute(address,bytes)"));
-
-    constructor(address _proxyRegistry,
-                address _guardFactory
-    )
-        internal
-    {
-        proxyRegistry = ProxyRegistry(_proxyRegistry);
-        guardFactory = DSGuardFactory(_guardFactory);
-    }
 
     // _____________ Creating Gelato User Proxies 1/3 ______________________
     /// @dev requires user to have no proxy
