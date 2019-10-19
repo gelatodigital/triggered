@@ -16,5 +16,8 @@
   "bugs": {
     "url": "https://github.com/gelatodigital/triggered/issues"
   },
-  "homepage": "https://github.com/gelatodigital/triggered#readme"
+  "homepage": "https://github.com/gelatodigital/triggered#readme",
+  "dependencies": {
+    "@openzeppelin/contracts": "^2.3.0"
+  }
 }
