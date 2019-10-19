@@ -19,4 +19,8 @@ contract GelatoConstants {
     uint256 constant public constGasInsideGasleftChecks = 100000 - constGasOutsideGasleftChecks;
     uint256 constant public constCanExecMaxGas =100000;
     // ==========
+
+    // ________ Gelato Core Constants ______________________
+    uint256 constant public constExecuteGas = 100000;
+    // ==========
 }
