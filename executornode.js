@@ -1,4 +1,5 @@
 module.exports = () => {
+  console.log(`\n\t\t Starting from block number: ${process.env.BLOCK}`);
 
   setInterval(queryChainAndExecute, 30000);
 
@@ -15,7 +16,7 @@ module.exports = () => {
 
     // Fetch minted and not burned executionClaims
     const mintedClaims = {};
-    const deploymentblockNum = 6606955;
+    const deploymentblockNum = process.env.BLOCK;
     // Get LogNewExecutionClaimMinted return values
     await gelatoCore
       .getPastEvents(
