@@ -8,7 +8,7 @@ GF: 0xffaF24bf2F44689ea8Dd3AF35b32DD9cFF5cf0B6
 
 Gelato
 ------
-GC: https://gist.github.com/gitpusha/9aefd54d03a7c695fcd02cbb581e4541
+GC: 0x49A791153dbEe3fBc081Ce159d51C70A89323e73
 
 GelatoTA
 --------
