@@ -44,7 +44,8 @@ contract KyberTrigger is GelatoTriggersStandard {
         GelatoTriggersStandard("fired(address,address,uint256,bool,uint256)")
     {}
 
-    function fired(address _sellToken,
+    function fired(///@dev encode all params WITHOUT fnSelector
+                   address _sellToken,
                    address _buyToken,
                    uint256 _sellAmount,
                    bool isGreater,

@@ -1,3 +1,5 @@
+*.icloud
+
 .openzeppelin
 *.swp
 *.swo

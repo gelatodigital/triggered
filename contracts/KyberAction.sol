@@ -121,7 +121,7 @@ contract KyberAction is Helper {
                    address gelatoCore
     );
 
-    function action(///@dev dont encode the user
+    function action(///@dev dont encode the user and dont encodeWithSelector
                     address user,
                     ///@dev encode all below
                     address src,
