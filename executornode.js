@@ -2,7 +2,7 @@ module.exports = async function(callback) {
   // Fetch Account & Contracts
   const accounts = await web3.eth.getAccounts();
   const account = accounts[0];
-  const GelatoCore = artifacts.require("GelatoCore");
+  const GelatoCore = artifacts.require("GelatoCoreDiffusion");
   const gelatoCore = await GelatoCore.at(
     "0x49A791153dbEe3fBc081Ce159d51C70A89323e73"
   );
@@ -151,6 +151,9 @@ module.exports = async function(callback) {
           `);
 
       let txGasPrice = await web3.utils.toWei("5", "gwei");
+      let msgValue = await gelatoCore.contract.methods
+        .getMintingDepositPayable(claim.action, claim.selectedExecutor)
+        .call();
       gelatoCore.contract.methods
         .execute(
           claim.trigger,
@@ -165,6 +168,7 @@ module.exports = async function(callback) {
         .send({
           gas: 3000000,
           from: account,
+          value: msgValue,
           gasPrice: txGasPrice
         })
         .once("receipt", receipt => console.log("Tx Receipt:", receipt));
