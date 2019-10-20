@@ -11,7 +11,6 @@ module.exports = async function(callback) {
   const mintedClaims = {};
   const deploymentblockNum = 6606049;
 
-  console.log("We are heeeere");
   // Get LogNewExecutionClaimMinted return values
   await gelatoCore
     .getPastEvents(
@@ -23,9 +22,8 @@ module.exports = async function(callback) {
       function(error, events) {}
     )
     .then(function(events) {
-      console.log("\n\tLogNewExecutionClaimMinted Found\n");
+      console.log("\n\t\tLogNewExecutionClaimMinted Found\n");
       events.forEach(event => {
-        console.log("HEEREE 2")
         mintedClaims[parseInt(event.returnValues.executionClaimId)] = {
           selectedExecutor: event.returnValues.selectedExecutor,
           executionClaimId: event.returnValues.executionClaimId,
@@ -35,13 +33,6 @@ module.exports = async function(callback) {
           executionClaimExpiryDate: event.returnValues.executionClaimExpiryDate,
           executorFee: event.returnValues.executorFee
         };
-        console.log(
-          "LogNewExecutionClaimMinted Found:\n",
-          "executionClaimId: ",
-          event.returnValues.executionClaimId,
-          "\n",
-          mintedClaims[parseInt(event.returnValues.executionClaimId)]
-        );
       });
     });
 
@@ -65,11 +56,12 @@ module.exports = async function(callback) {
         mintedClaims[parseInt(event.returnValues.executionClaimId)].action =
           event.returnValues.action;
         console.log(
-          "LogTriggerActionMinted Found:\n",
-          "executionClaimId: ",
+          "\t\tLogTriggerActionMinted Found:\n",
+          "\t\texecutionClaimId: ",
           event.returnValues.executionClaimId,
           "\n",
-          mintedClaims[parseInt(event.returnValues.executionClaimId)]
+          mintedClaims[parseInt(event.returnValues.executionClaimId)],
+          "\n"
         );
       });
     });
@@ -89,8 +81,8 @@ module.exports = async function(callback) {
         events.forEach(event => {
           delete mintedClaims[parseInt(event.returnValues.executionClaimId)];
           console.log(
-            "LogClaimExecutedBurnedAndDeleted Found:\n",
-            "executionClaimId: ",
+            "\n\t\tLogClaimExecutedBurnedAndDeleted Found:\n",
+            "\t\texecutionClaimId: ",
             event.returnValues.executionClaimId,
             "\n"
           );
@@ -113,8 +105,8 @@ module.exports = async function(callback) {
         events.forEach(event => {
           delete mintedClaims[parseInt(event.returnValues.executionClaimId)];
           console.log(
-            "LogExecutionClaimCancelled Found:\n",
-            "executionClaimId: ",
+            "\n\t\tLogExecutionClaimCancelled Found:\n",
+            "\t\texecutionClaimId: ",
             event.returnValues.executionClaimId,
             "\n"
           );
@@ -122,51 +114,57 @@ module.exports = async function(callback) {
       }
     });
 
-  console.log("Available ExecutionClaims: , mintedClaims", mintedClaims);
+  console.log("\n\n\t\tAvailable ExecutionClaims:", mintedClaims);
 
   // Loop through all execution claims and check if they are executable. If yes, execute, if not, skip
   let canExecuteReturn;
 
-  for (let claim of mintedClaims) {
-    console.log(`
-        Check if ExeutionClaim: ${claim.executionClaimId} is executable
-    `);
+  for (let executionClaimId in mintedClaims) {
+    console.log(
+      "\n\tCheck if ExeutionClaim ",
+      executionClaimId,
+      " is executable\n"
+    );
     // Call canExecute
     canExecuteReturn = await gelatoCore.contract.methods
       .canExecute(
-        claim.trigger,
-        claim.triggerPayload,
-        claim.userProxy,
-        claim.executePayload,
-        claim.executeGas,
-        claim.executionClaimId,
-        claim.executionClaimExpiryDate,
-        claim.executorFee
+        mintedClaims[executionClaimId].trigger,
+        mintedClaims[executionClaimId].triggerPayload,
+        mintedClaims[executionClaimId].userProxy,
+        mintedClaims[executionClaimId].executePayload,
+        mintedClaims[executionClaimId].executeGas,
+        mintedClaims[executionClaimId].executionClaimId,
+        mintedClaims[executionClaimId].executionClaimExpiryDate,
+        mintedClaims[executionClaimId].executorFee
       )
       .call();
+    console.log("canExecuteReturn:", canExecuteReturn);
 
-    if (parseInt(canExecuteReturn[6].toString()) === 6) {
+    if (parseInt(canExecuteReturn[0].toString()) === 0) {
       console.log(`
-          🔥🔥🔥ExeutionClaim: ${claim.executionClaimId} is executable🔥🔥🔥
-          `);
+          🔥🔥🔥ExeutionClaim: ${executionClaimId} is executable🔥🔥🔥
+      `);
       console.log(`
           ⚡⚡⚡ Send TX ⚡⚡⚡
-          `);
+      `);
 
       let txGasPrice = await web3.utils.toWei("5", "gwei");
       let msgValue = await gelatoCore.contract.methods
-        .getMintingDepositPayable(claim.action, claim.selectedExecutor)
+        .getMintingDepositPayable(
+          mintedClaims[executionClaimId].action,
+          mintedClaims[executionClaimId].selectedExecutor
+        )
         .call();
       gelatoCore.contract.methods
         .execute(
-          claim.trigger,
-          claim.triggerPayload,
-          claim.userProxy,
-          claim.executePayload,
-          claim.executeGas,
-          claim.executionClaimId,
-          claim.executionClaimExpiryDate,
-          claim.executorFee
+          mintedClaims[executionClaimId].trigger,
+          mintedClaims[executionClaimId].triggerPayload,
+          mintedClaims[executionClaimId].userProxy,
+          mintedClaims[executionClaimId].executePayload,
+          mintedClaims[executionClaimId].executeGas,
+          mintedClaims[executionClaimId].executionClaimId,
+          mintedClaims[executionClaimId].executionClaimExpiryDate,
+          mintedClaims[executionClaimId].executorFee
         )
         .send({
           gas: 3000000,
@@ -186,7 +184,7 @@ module.exports = async function(callback) {
           `);
     } else {
       console.log(`
-          ❌❌❌ExeutionClaim: ${claim.executionClaimId} is NOT executable❌❌❌`);
+          ❌❌❌ExeutionClaim: ${executionClaimId} is NOT executable❌❌❌`);
     }
   }
 
