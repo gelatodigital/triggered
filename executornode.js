@@ -7,6 +7,8 @@ module.exports = async function(callback) {
     "0x49A791153dbEe3fBc081Ce159d51C70A89323e73"
   );
 
+  console.log("\n\tRunning Executor Node from:\n", account, "\n");
+
   // Fetch minted and not burned executionClaims
   const mintedClaims = {};
   const deploymentblockNum = 6606049;
@@ -155,6 +157,7 @@ module.exports = async function(callback) {
           mintedClaims[executionClaimId].selectedExecutor
         )
         .call();
+      console.log("\n", msgValue, "\n");
       gelatoCore.contract.methods
         .execute(
           mintedClaims[executionClaimId].trigger,
@@ -172,13 +175,7 @@ module.exports = async function(callback) {
           value: msgValue,
           gasPrice: txGasPrice
         })
-        .once("receipt", receipt => console.log("Tx Receipt:", receipt));
-      // .once("transactionHash", hash => (console.log(`
-      // TX Hash:        ${hash}
-      // EtherScan:      https://rinkeby.etherscan.io/tx/${hash}`)))
-      // .once("receipt", receipt => (console.log('Tx Receipt:', receipt)))
-      // .on("error", console.error);
-
+        .once("receipt", receipt => console.log("\n\t\tTx Receipt:\n", receipt));
       console.log(`
           ⚡⚡⚡ Tx Broadcasted ⚡⚡⚡
           `);
