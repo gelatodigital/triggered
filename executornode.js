@@ -2,7 +2,7 @@ module.exports = async function(callback) {
   // Fetch Account & Contracts
   const accounts = await web3.eth.getAccounts();
   const account = accounts[0];
-  const GelatoCore = artifacts.require("GelatoCoreDiffusion");
+  const GelatoCore = artifacts.require("GelatoCore");
   const gelatoCore = await GelatoCore.at(
     "0x49A791153dbEe3fBc081Ce159d51C70A89323e73"
   );
@@ -11,7 +11,7 @@ module.exports = async function(callback) {
   const mintedClaims = {};
   const deploymentblockNum = 6606049;
 
-  
+  console.log("We are heeeere");
   // Get LogNewExecutionClaimMinted return values
   await gelatoCore
     .getPastEvents(
@@ -23,7 +23,9 @@ module.exports = async function(callback) {
       function(error, events) {}
     )
     .then(function(events) {
+      console.log("\n\tLogNewExecutionClaimMinted Found\n");
       events.forEach(event => {
+        console.log("HEEREE 2")
         mintedClaims[parseInt(event.returnValues.executionClaimId)] = {
           selectedExecutor: event.returnValues.selectedExecutor,
           executionClaimId: event.returnValues.executionClaimId,
@@ -36,7 +38,7 @@ module.exports = async function(callback) {
         console.log(
           "LogNewExecutionClaimMinted Found:\n",
           "executionClaimId: ",
-          returnValues.executionClaimId,
+          event.returnValues.executionClaimId,
           "\n",
           mintedClaims[parseInt(event.returnValues.executionClaimId)]
         );
@@ -65,7 +67,7 @@ module.exports = async function(callback) {
         console.log(
           "LogTriggerActionMinted Found:\n",
           "executionClaimId: ",
-          returnValues.executionClaimId,
+          event.returnValues.executionClaimId,
           "\n",
           mintedClaims[parseInt(event.returnValues.executionClaimId)]
         );
@@ -89,7 +91,7 @@ module.exports = async function(callback) {
           console.log(
             "LogClaimExecutedBurnedAndDeleted Found:\n",
             "executionClaimId: ",
-            returnValues.executionClaimId,
+            event.returnValues.executionClaimId,
             "\n"
           );
         });
@@ -113,7 +115,7 @@ module.exports = async function(callback) {
           console.log(
             "LogExecutionClaimCancelled Found:\n",
             "executionClaimId: ",
-            returnValues.executionClaimId,
+            event.returnValues.executionClaimId,
             "\n"
           );
         });
