@@ -157,7 +157,7 @@ module.exports = () => {
             });
         });
       }
-      canExecuteReturn = await canExecute();
+      canExecute().then(result => canExecuteReturn = result);
 
       console.log("\n\t CanExecute Result:", canExecuteReturn, "\n");
 
