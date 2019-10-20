@@ -136,28 +136,18 @@ module.exports = () => {
         " is executable\n"
       );
       // Call canExecute
-      function canExecute() {
-        return new Promise(async (resolve, reject) => {
-          await gelatoCore.contract.methods
-            .canExecute(
-              mintedClaims[executionClaimId].trigger,
-              mintedClaims[executionClaimId].triggerPayload,
-              mintedClaims[executionClaimId].userProxy,
-              mintedClaims[executionClaimId].executePayload,
-              mintedClaims[executionClaimId].executeGas,
-              mintedClaims[executionClaimId].executionClaimId,
-              mintedClaims[executionClaimId].executionClaimExpiryDate,
-              mintedClaims[executionClaimId].executorFee
-            )
-            .call((error, result) => {
-              if (error) {
-                reject(error);
-              }
-              resolve(result);
-            });
-        });
-      }
-      canExecute().then(result => canExecuteReturn = result);
+      canExecuteReturn = await gelatoCore.contract.methods
+        .canExecute(
+          mintedClaims[executionClaimId].trigger,
+          mintedClaims[executionClaimId].triggerPayload,
+          mintedClaims[executionClaimId].userProxy,
+          mintedClaims[executionClaimId].executePayload,
+          mintedClaims[executionClaimId].executeGas,
+          mintedClaims[executionClaimId].executionClaimId,
+          mintedClaims[executionClaimId].executionClaimExpiryDate,
+          mintedClaims[executionClaimId].executorFee
+        )
+        .call();
 
       console.log("\n\t CanExecute Result:", canExecuteReturn, "\n");
 
@@ -187,14 +177,16 @@ module.exports = () => {
             from: account,
             gasPrice: txGasPrice
           })
-          .once("receipt", receipt => {
-            return "\n\t\tTx Receipt:\n", receipt;
-          })
+          .once("receipt", receipt =>
+            console.log("\n\t\tTx Receipt:\n", receipt)
+          )
           .on("error", error => {
-            return error;
+            console.log(error);
           });
       } else {
-        return `❌❌❌ExeutionClaim: ${executionClaimId} is NOT executable❌❌❌`;
+        console.log(
+          `❌❌❌ExeutionClaim: ${executionClaimId} is NOT executable❌❌❌`
+        );
       }
     }
   }
