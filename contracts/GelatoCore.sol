@@ -306,19 +306,23 @@ contract GelatoCore is GelatoUserProxies,
     event LogNewExecutionClaimMinted(address indexed selectedExecutor,
                                      uint256 indexed executionClaimId,
                                      address indexed userProxy,
+                                     bytes executePayload,
                                      uint256 executeGas,
                                      uint256 executionClaimExpiryDate,
-                                     uint256 executorFee,
-                                     bytes triggerPayload,
-                                     address trigger,
-                                     bytes executePayload
+                                     uint256 executorFee
+    );
+    event LogTriggerActionMinted(uint256 indexed executionClaimId,
+                                 address indexed trigger,
+                                 bytes triggerPayload,
+                                 address indexed action
     );
 
     function mintExecutionClaim(address _trigger,
-                                address _action,
-                                address payable _selectedExecutor,
                                 bytes calldata _specificTriggerParams,
-                                bytes calldata _specificActionParams
+                                address _action,
+                                bytes calldata _specificActionParams,
+                                address payable _selectedExecutor
+
     )
         external
         payable
@@ -396,13 +400,12 @@ contract GelatoCore is GelatoUserProxies,
         emit LogNewExecutionClaimMinted(_selectedExecutor,
                                         executionClaimId,
                                         userProxy,
+                                        executePayload,
                                         constExecuteGas.add(actionGasStipend),
                                         executionClaimExpiryDate,
-                                        msg.value,
-                                        triggerPayload,
-                                        _trigger,
-                                        executePayload
+                                        msg.value
         );
+        emit LogTriggerActionMinted(executionClaimId, _trigger, triggerPayload, _action);
     }
     // $$$$$$$$$$$$$$$ mintExecutionClaim() API END
 
