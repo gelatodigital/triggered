@@ -1,9 +1,10 @@
 module.exports = () => {
-  console.log(`\n\t\t Starting from block number: ${process.env.BLOCK}`);
-
   setInterval(queryChainAndExecute, 30000);
 
+  let searchFromBlock = process.env.BLOCK;
+
   async function queryChainAndExecute() {
+    console.log(`\n\t\t Starting from block number: ${searchFromBlock}`);
     // Fetch Account & Contracts
     const accounts = await web3.eth.getAccounts();
     const account = accounts[0];
@@ -16,13 +17,12 @@ module.exports = () => {
 
     // Fetch minted and not burned executionClaims
     const mintedClaims = {};
-    const deploymentblockNum = process.env.BLOCK;
     // Get LogNewExecutionClaimMinted return values
     await gelatoCore
       .getPastEvents(
         "LogNewExecutionClaimMinted",
         {
-          fromBlock: deploymentblockNum,
+          fromBlock: searchFromBlock,
           toBlock: "latest"
         },
         function(error, events) {}
@@ -53,7 +53,7 @@ module.exports = () => {
       .getPastEvents(
         "LogTriggerActionMinted",
         {
-          fromBlock: deploymentblockNum,
+          fromBlock: searchFromBlock,
           toBlock: "latest"
         },
         function(error, events) {}
@@ -81,7 +81,7 @@ module.exports = () => {
       .getPastEvents(
         "LogClaimExecutedBurnedAndDeleted",
         {
-          fromBlock: deploymentblockNum,
+          fromBlock: searchFromBlock,
           toBlock: "latest"
         },
         function(error, events) {}
@@ -105,7 +105,7 @@ module.exports = () => {
       .getPastEvents(
         "LogExecutionClaimCancelled",
         {
-          fromBlock: deploymentblockNum,
+          fromBlock: searchFromBlock,
           toBlock: "latest"
         },
         function(error, events) {}
@@ -125,6 +125,15 @@ module.exports = () => {
       });
 
     console.log("\n\n\t\tAvailable ExecutionClaims:", mintedClaims);
+
+    function isEmpty(obj) {
+      return Object.getOwnPropertyNames(obj).length === 0;
+    }
+
+    if (isEmpty(mintedClaims)) {
+      searchFromBlock = await web3.eth.getBlockNumber();
+      searchFromBlock = searchFromBlock - 2;
+    }
 
     // Loop through all execution claims and check if they are executable. If yes, execute, if not, skip
     let canExecuteReturn;
