@@ -12,7 +12,7 @@ module.exports = () => {
       "0x49A791153dbEe3fBc081Ce159d51C70A89323e73"
     );
 
-    console.log("\n\tRunning Executor Node from:\n", account, "\n");
+    console.log("\n\t/tRunning Executor Node from:", account, "\n");
 
     // Fetch minted and not burned executionClaims
     const mintedClaims = {};
@@ -136,18 +136,28 @@ module.exports = () => {
         " is executable\n"
       );
       // Call canExecute
-      canExecuteReturn = await gelatoCore.contract.methods
-        .canExecute(
-          mintedClaims[executionClaimId].trigger,
-          mintedClaims[executionClaimId].triggerPayload,
-          mintedClaims[executionClaimId].userProxy,
-          mintedClaims[executionClaimId].executePayload,
-          mintedClaims[executionClaimId].executeGas,
-          mintedClaims[executionClaimId].executionClaimId,
-          mintedClaims[executionClaimId].executionClaimExpiryDate,
-          mintedClaims[executionClaimId].executorFee
-        )
-        .call();
+      function canExecute() {
+        return new Promise(async (resolve, reject) => {
+          await gelatoCore.contract.methods
+            .canExecute(
+              mintedClaims[executionClaimId].trigger,
+              mintedClaims[executionClaimId].triggerPayload,
+              mintedClaims[executionClaimId].userProxy,
+              mintedClaims[executionClaimId].executePayload,
+              mintedClaims[executionClaimId].executeGas,
+              mintedClaims[executionClaimId].executionClaimId,
+              mintedClaims[executionClaimId].executionClaimExpiryDate,
+              mintedClaims[executionClaimId].executorFee
+            )
+            .call((error, result) => {
+              if (error) {
+                reject(error);
+              }
+              resolve(result);
+            });
+        });
+      }
+      canExecuteReturn = await canExecute();
 
       console.log("\n\t CanExecute Result:", canExecuteReturn, "\n");
 
