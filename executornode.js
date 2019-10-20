@@ -11,7 +11,7 @@ module.exports = () => {
     const gelatoCore = await GelatoCore.at(
       "0x49A791153dbEe3fBc081Ce159d51C70A89323e73"
     );
-    
+
     console.log("\n\t Running Executor Node from:", account, "\n");
 
     // Fetch minted and not burned executionClaims
