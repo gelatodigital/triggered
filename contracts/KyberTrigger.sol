@@ -49,7 +49,7 @@ contract KyberTrigger is GelatoTriggersStandard {
                    address _buyToken,
                    uint256 _sellAmount,
                    bool isGreater,
-                   uint256 _buyAmount
+                   uint256 _whatIWant
     )
         external
         view
@@ -58,17 +58,17 @@ contract KyberTrigger is GelatoTriggersStandard {
         (, uint256 receivable) = firedView(_sellToken, _buyToken, _sellAmount);
         if (isGreater)
         {
-            if (receivable >= _buyAmount){
+            if (receivable >= _whatIWant){
                 return true;
             } else {
                 return false;
             }
 
         } else if (!isGreater) {
-            if (receivable >= _buyAmount) {
-                return false;
-            } else {
+            if (receivable < _whatIWant) {
                 return true;
+            } else {
+                return false;
             }
         }
     }
