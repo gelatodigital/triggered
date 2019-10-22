@@ -1,6 +1,6 @@
 pragma solidity ^0.5.10;
 
-import "../DappSys/DSGuard.sol";
+import "../../DappSys/DSGuard.sol";
 
 interface IDSGuard {
     event LogSetAuthority (address indexed authority);

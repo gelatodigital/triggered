@@ -1,6 +1,6 @@
 pragma solidity ^0.5.10;
 
-import "../DappSys/DSProxy.sol";
+import "../../DappSys/DSProxy.sol";
 
 interface IDSProxy {
     event LogSetAuthority (address indexed authority);

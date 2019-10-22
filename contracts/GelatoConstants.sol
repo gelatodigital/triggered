@@ -2,6 +2,9 @@ pragma solidity ^0.5.10;
 
 contract GelatoConstants {
 
+    /// @dev to mark this contract as non-deployable
+    constructor() internal {}
+
     // ________ Gelato User Proxy Constants __________________________
     /// @notice Ropsten addresses
     address constant public constProxyRegistry

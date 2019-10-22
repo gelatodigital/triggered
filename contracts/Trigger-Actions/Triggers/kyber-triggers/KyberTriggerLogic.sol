@@ -1,43 +1,10 @@
 pragma solidity ^0.5.10;
 
-contract GelatoTriggersStandard {
-    bytes4 internal triggerSelector;
-
-    function getTriggerSelector()
-        external
-        view
-        returns(bytes4)
-    {
-        return triggerSelector;
-    }
-
-    constructor(string memory _triggerSignature)
-        internal
-    {
-        triggerSelector = bytes4(keccak256(bytes(_triggerSignature)));
-    }
-}
-
-contract KyberInterface {
-    function trade(
-        address src,
-        uint256 srcAmount,
-        address dest,
-        address destAddress,
-        uint256 maxDestAmount,
-        uint256 minConversionRate,
-        address walletId
-        ) public payable returns (uint256);
-
-    function getExpectedRate(
-        address src,
-        address dest,
-        uint256 srcQty
-        ) public view returns (uint256, uint256);
-}
+import '../GelatoTriggersStandard.sol';
+import '../../../Interfaces/Kyber/IKyber.sol';
 
 
-contract KyberTrigger is GelatoTriggersStandard {
+contract KyberTriggerLogic is GelatoTriggersStandard {
 
     constructor()
         public
@@ -83,7 +50,7 @@ contract KyberTrigger is GelatoTriggersStandard {
     )
     {
         (expectedRate,)
-            = KyberInterface(0x818E6FECD516Ecc3849DAf6845e3EC868087B755)
+            = IKyber(0x818E6FECD516Ecc3849DAf6845e3EC868087B755)
                 .getExpectedRate(src, dest, srcAmt);
         slippageRate = (expectedRate / 100) * 99; // slippage rate upto 99%
     }

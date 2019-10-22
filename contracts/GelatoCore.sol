@@ -1,9 +1,10 @@
 pragma solidity ^0.5.10;
 
 import './GelatoConstants.sol';
-import './DappSys/DSProxy.sol';
-import './ProxyRegistry.sol';
-import './DappSys/DSGuard.sol';
+import './Interfaces/IProxyRegistry.sol';
+import './Interfaces/DappSys/IDSGuardFactory.sol';
+import './Interfaces/DappSys/IDSProxy.sol';
+import './Interfaces/DappSys/IDSGuard.sol';
 import './Interfaces/IGelatoAction.sol';
 import './Interfaces/IGelatoTrigger.sol';
 import '@openzeppelin/contracts/drafts/Counters.sol';
@@ -14,18 +15,18 @@ import '@openzeppelin/contracts/math/SafeMath.sol';
 
 contract GelatoUserProxies is GelatoConstants
 {
-    ProxyRegistry public proxyRegistry;
-    DSGuardFactory public guardFactory;
+    IProxyRegistry public proxyRegistry;
+    IDSGuardFactory public guardFactory;
 
     constructor() internal {
-        proxyRegistry = ProxyRegistry(constProxyRegistry);
-        guardFactory = DSGuardFactory(constGuardFactory);
+        proxyRegistry = IProxyRegistry(constProxyRegistry);
+        guardFactory = IDSGuardFactory(constGuardFactory);
     }
 
     // _____________ Creating Gelato User Proxies 1/3 ______________________
     /// @dev requires user to have no proxy
     modifier userHasNoProxy {
-        require(proxyRegistry.proxies(msg.sender) == DSProxy(0),
+        require(proxyRegistry.proxies(msg.sender) == IDSProxy(0),
             "GelatoUserProxies: user already has a proxy"
         );
         _;
@@ -43,7 +44,7 @@ contract GelatoUserProxies is GelatoConstants
         returns(address userProxy, address userProxyGuardAddress)
     {
         userProxy = proxyRegistry.build(msg.sender);
-        DSGuard userProxyGuard = guardFactory.newGuard();
+        IDSGuard userProxyGuard = guardFactory.newGuard();
         userProxyGuard.permit(address(this), userProxy, bytes32(constExecSelector));
         userProxyGuard.setOwner(address(userProxy));
         userProxyGuardAddress = address(userProxyGuard);
@@ -53,21 +54,21 @@ contract GelatoUserProxies is GelatoConstants
     event LogGuard(address userProxyGuard);
     /**
      * @dev this function should be called for users that have a proxy but no guard
-     * @return the address of the deployed DSProxy aka userAccount
+     * @return the address of the deployed IDSProxy aka userAccount
      * @notice user EOA tx afterwards: userProxy.setAuthority(userProxyGuard)
      */
     function guard()
         external
         returns(address userProxyGuardAddress)
     {
-        DSProxy userProxy = proxyRegistry.proxies(msg.sender);
-        require(userProxy != DSProxy(0),
+        IDSProxy userProxy = proxyRegistry.proxies(msg.sender);
+        require(userProxy != IDSProxy(0),
             "GelatoUserProxies.guard: user has no proxy deployed -> devirginize()"
         );
-        require(DSProxy(userProxy).authority() == DSAuthority(0),
+        require(IDSProxy(userProxy).authority() == DSAuthority(0),
             "GelatoUserProxies.guard: user already has a DSAuthority"
         );
-        DSGuard userProxyGuard = guardFactory.newGuard();
+        IDSGuard userProxyGuard = guardFactory.newGuard();
         userProxyGuard.permit(address(this), address(userProxy), bytes32(constExecSelector));
         userProxyGuard.setOwner(address(userProxy));
         userProxyGuardAddress = address(userProxyGuard);
@@ -75,7 +76,7 @@ contract GelatoUserProxies is GelatoConstants
     }
 
     /**
-     * @dev 3rd option: user already has a DSGuard
+     * @dev 3rd option: user already has a IDSGuard
      * => permit(gelatoCore, address(userProxy), constExecSelector) via frontend
      */
     // ================
@@ -645,7 +646,7 @@ contract GelatoCore is GelatoUserProxies,
         nonReentrant
     {
         {
-            address userProxyOwner = DSProxy(_userProxy).owner();
+            address userProxyOwner = IDSProxy(_userProxy).owner();
             if (msg.sender != userProxyOwner) {
                 require(_executionClaimExpiryDate <= now && msg.sender == _selectedExecutor,
                     "GelatoCore.cancelExecutionClaim: only selected executor post expiry"

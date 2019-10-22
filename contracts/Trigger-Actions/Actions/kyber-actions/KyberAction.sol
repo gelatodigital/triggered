@@ -1,32 +1,6 @@
 pragma solidity ^0.5.0;
 
-interface IERC20 {
-    function transfer(address to, uint256 value) external returns (bool);
-    function approve(address spender, uint256 value) external returns (bool);
-    function transferFrom(address from, address to, uint256 value) external returns (bool);
-    function balanceOf(address who) external view returns (uint256);
-    function allowance(address owner, address spender) external view returns (uint256);
-}
-
-
-contract KyberInterface {
-    function trade(
-        address src,
-        uint256 srcAmount,
-        address dest,
-        address destAddress,
-        uint256 maxDestAmount,
-        uint256 minConversionRate,
-        address walletId
-        ) public payable returns (uint256);
-
-    function getExpectedRate(
-        address src,
-        address dest,
-        uint256 srcQty
-        ) public view returns (uint256, uint256);
-}
-
+import '../../../Interfaces/IERC20.sol';
 
 contract Helper {
     /**
@@ -94,7 +68,10 @@ contract Helper {
      * @param tknContract is the token
      * @param srcAmt is the amount of token to sell
      */
-    function setApproval(IERC20 tknContract, uint256 srcAmt) internal returns (uint256) {
+    function setApproval(IERC20 tknContract, uint256 srcAmt)
+        internal
+        returns (uint256)
+    {
         uint256 tokenAllowance = tknContract.allowance(address(this), getAddressKyber());
         if (srcAmt > tokenAllowance) {
             tknContract.approve(getAddressKyber(), 2**255);

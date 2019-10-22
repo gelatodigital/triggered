@@ -1,6 +1,6 @@
 pragma solidity ^0.5.10;
 
-import './DappSys/DSProxy.sol';
+import './DSProxy.sol';
 
 // This Registry deploys new proxy instances through DSProxyFactory.build(address)
 //   and keeps a registry of owner => proxy
