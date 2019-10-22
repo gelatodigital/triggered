@@ -11,47 +11,43 @@ contract KyberTriggerLogic is GelatoTriggersStandard {
         GelatoTriggersStandard("fired(address,address,uint256,bool,uint256)")
     {}
 
+
+    /**
+     * @dev Get the expected exchange rate and slippage rate from Kyber Network
+     * @param _src source ERC20 token contract address
+     * @param _dest destination ERC20 token contract address
+     * @param _srcQty wei amount of source ERC20 token
+     * @param _isGreater to
+     * @param _destAmt the
+     */
     function fired(///@dev encode all params WITHOUT fnSelector
-                   address _sellToken,
-                   address _buyToken,
-                   uint256 _sellAmount,
-                   bool isGreater,
-                   uint256 _whatIWant
+                   address _src,
+                   address _dest,
+                   uint256 _srcQty,
+                   bool _isGreater,
+                   uint256 _wantedRate
     )
         external
         view
         returns(bool)
     {
-        (, uint256 receivable) = firedView(_sellToken, _buyToken, _sellAmount);
-        if (isGreater)
-        {
-            if (receivable >= _whatIWant){
+        (uint256 expectedRate,)
+            = IKyber(0x818E6FECD516Ecc3849DAf6845e3EC868087B755)
+                .getExpectedRate(_src,_dest,_srcQty
+        );
+        uint256 slippageFloor = (expectedRate / 100) * 99;  // capped at 1% slippage
+        if (_isGreater) {
+            if (expectedRateFloor.div(10**18).mul(_destAmt)  >= _destAmt){
                 return true;
             } else {
                 return false;
             }
-
-        } else if (!isGreater) {
-            if (receivable < _whatIWant) {
+        } else if (!_isGreater) {
+            if (slippageRate < _destAmt) {
                 return true;
             } else {
                 return false;
             }
         }
-    }
-
-    function firedView(
-        address src,
-        address dest,
-        uint256 srcAmt
-    ) public view returns (
-        uint256 expectedRate,
-        uint256 slippageRate
-    )
-    {
-        (expectedRate,)
-            = IKyber(0x818E6FECD516Ecc3849DAf6845e3EC868087B755)
-                .getExpectedRate(src, dest, srcAmt);
-        slippageRate = (expectedRate / 100) * 99; // slippage rate upto 99%
     }
 }
