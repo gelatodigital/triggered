@@ -4,7 +4,7 @@ import '../GelatoTriggersStandard.sol';
 import '../../../Interfaces/Kyber/IKyber.sol';
 
 
-contract KyberTriggerLogic is GelatoTriggersStandard {
+contract KyberLimitTrigger is GelatoTriggersStandard {
 
     constructor()
         public
@@ -17,37 +17,64 @@ contract KyberTriggerLogic is GelatoTriggersStandard {
      * @param _src source ERC20 token contract address
      * @param _dest destination ERC20 token contract address
      * @param _srcQty wei amount of source ERC20 token
-     * @param _isGreater to
-     * @param _destAmt the
+     * @param _isGreater isGreater == limit sell, !isGreater == stop loss
+     * @param _rate the conversion rate (price per src) the user specified
      */
     function fired(///@dev encode all params WITHOUT fnSelector
                    address _src,
                    address _dest,
                    uint256 _srcQty,
-                   bool _isGreater,
-                   uint256 _wantedRate
+                   uint256 _userRate,
+                   bool _isGreater
     )
         external
         view
         returns(bool)
     {
-        (uint256 expectedRate,)
+        (/*uint256 kyberExpectedRate*/,
+         uint256 kyberSlippageRate)
             = IKyber(0x818E6FECD516Ecc3849DAf6845e3EC868087B755)
                 .getExpectedRate(_src,_dest,_srcQty
         );
-        uint256 slippageFloor = (expectedRate / 100) * 99;  // capped at 1% slippage
+        ///@notice Limit Sell\Limit Buy (late to the party)
         if (_isGreater) {
-            if (expectedRateFloor.div(10**18).mul(_destAmt)  >= _destAmt){
+            if (kyberSlippageRate >= _userRate) {
                 return true;
-            } else {
-                return false;
             }
-        } else if (!_isGreater) {
-            if (slippageRate < _destAmt) {
-                return true;
-            } else {
-                return false;
-            }
+            return false;
         }
+        ///@notice Stop-Loss Sell\Limit Buy
+        else if (!_isGreater) {
+            if (kyberSlippageRate <= _userRate) {
+                return true;
+            }
+            return false;
+        }
+    }
+
+    function _limitSellPossible(uint256 _kyberRate,
+                                uint256 _userRate
+    )
+        internal
+        view
+        returns(bool)
+    {
+        if (_quotedRated >= _userRate) {
+            return true;
+        }
+        return false;
+    }
+
+    function _stopLossCrossed(uint256 _kyberRate,
+                              uint256 _userRate
+    )
+        internal
+        view
+        returns(bool)
+    {
+        if (_kyberRate <= _userRate) {
+            return true;
+        }
+        return false;
     }
 }
