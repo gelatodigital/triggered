@@ -10,7 +10,7 @@ module.exports = () => {
     const account = accounts[0];
     const GelatoCore = artifacts.require("GelatoCore");
     const gelatoCore = await GelatoCore.at(
-      "0x49A791153dbEe3fBc081Ce159d51C70A89323e73"
+      "0xbe9bDF5F7b56616bd09CAd224c8903D2de51FCeb"
     );
 
     console.log("\n\t Running Executor Node from:", account, "\n");

@@ -1,6 +1,7 @@
 pragma solidity ^0.5.0;
 
 import '../../../Interfaces/IERC20.sol';
+import '../../../Interfaces/Kyber/IKyber.sol';
 
 contract Helper {
     /**
@@ -41,9 +42,8 @@ contract Helper {
                  uint256 slippageRate
         )
     {
-        (expectedRate,)
-            = KyberInterface(getAddressKyber()).getExpectedRate(src, dest, srcAmt);
-        slippageRate = (expectedRate / 100) * 99; // changing slippage rate upto 99%
+        (expectedRate,
+         slippageRate) = IKyber(getAddressKyber()).getExpectedRate(src, dest, srcAmt);
     }
 
     /**
@@ -70,7 +70,6 @@ contract Helper {
      */
     function setApproval(IERC20 tknContract, uint256 srcAmt)
         internal
-        returns (uint256)
     {
         uint256 tokenAllowance = tknContract.allowance(address(this), getAddressKyber());
         if (srcAmt > tokenAllowance) {
@@ -82,7 +81,7 @@ contract Helper {
 
 contract KyberAction is Helper {
     bytes4 constant internal actionSelector
-        = bytes4(keccak256(bytes("action(address, address, address, uint256, uint256)")));
+        = bytes4(keccak256(bytes("action(address,address,address,uint256,uint256)")));
     uint256 constant internal actionGasStipend = 300000;
 
     function getActionSelector() external pure returns(bytes4) {return actionSelector;}
@@ -99,32 +98,32 @@ contract KyberAction is Helper {
     );
 
     function action(///@dev dont encode the user and dont encodeWithSelector
-                    address user,
+                    address _user,
                     ///@dev encode all below
-                    address src,
-                    address dest,
-                    uint256 srcAmt,
-                    uint256 slippageRate
+                    address _src,
+                    address _dest,
+                    uint256 _srcAmt,
+                    uint256 _minConversionRate
     )
         external
         returns (uint256 destAmt)
     {
-        getToken(user, src, srcAmt);
-        destAmt = KyberInterface(getAddressKyber()).trade.value(0)(src,
-                                                                   srcAmt,
-                                                                   dest,
-                                                                   user,
-                                                                   2**255,
-                                                                   slippageRate,
-                                                                   msg.sender  // gelatoCore
+        getToken(_user, _src, _srcAmt);
+        destAmt = IKyber(getAddressKyber()).trade.value(0)(_src,
+                                                           _srcAmt,
+                                                           _dest,
+                                                           _user,
+                                                           2**255,
+                                                           _minConversionRate,
+                                                           address(0)  // fee-sharing
         );
         emit LogTrade(src,
                       srcAmt,
                       dest,
                       destAmt,
-                      user,
-                      slippageRate,
-                      msg.sender
+                      _user,
+                      _minConversionRate,
+                      address(0)  // fee-sharing
         );
 
     }
